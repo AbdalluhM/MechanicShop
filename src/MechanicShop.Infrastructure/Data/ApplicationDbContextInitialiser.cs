@@ -9,8 +9,12 @@ using MechanicShop.Domain.Workorders;
 using MechanicShop.Domain.Workorders.Enums;
 using MechanicShop.Infrastructure.Identity;
 
+using System;
+using System.Linq;
+
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -30,7 +34,9 @@ public class ApplicationDbContextInitialiser(
     {
         try
         {
-            await _context.Database.EnsureCreatedAsync();
+            // Use MigrateAsync for production - it applies pending migrations
+            // EnsureCreatedAsync doesn't work with migrations and can cause issues in production
+            await _context.Database.MigrateAsync();
         }
         catch (Exception ex)
         {
@@ -55,108 +61,143 @@ public class ApplicationDbContextInitialiser(
     public async Task TrySeedAsync()
     {
         // Default roles
-        var managerRole = new IdentityRole(nameof(Role.Manager));
-
-        if (_roleManager.Roles.All(r => r.Name != managerRole.Name))
+        var managerRoleName = nameof(Role.Manager);
+        if (!await _roleManager.RoleExistsAsync(managerRoleName))
         {
+            var managerRole = new IdentityRole(managerRoleName);
             await _roleManager.CreateAsync(managerRole);
         }
 
-        var laborRole = new IdentityRole(nameof(Role.Labor));
-
-        if (_roleManager.Roles.All(r => r.Name != laborRole.Name))
+        var laborRoleName = nameof(Role.Labor);
+        if (!await _roleManager.RoleExistsAsync(laborRoleName))
         {
+            var laborRole = new IdentityRole(laborRoleName);
             await _roleManager.CreateAsync(laborRole);
         }
 
         // Default users
-        var manager = new AppUser
+        var managerEmail = "pm@localhost";
+        var manager = await _userManager.FindByEmailAsync(managerEmail);
+        if (manager == null)
         {
-            Id = "19a59129-6c20-417a-834d-11a208d32d96",
-            Email = "pm@localhost",
-            UserName = "pm@localhost",
-            EmailConfirmed = true
-        };
-
-        if (_userManager.Users.All(u => u.Email != manager.Email))
-        {
-            await _userManager.CreateAsync(manager, manager.Email);
-
-            if (!string.IsNullOrWhiteSpace(managerRole.Name))
+            manager = new AppUser
             {
-                await _userManager.AddToRolesAsync(manager, [managerRole.Name]);
+                Id = "19a59129-6c20-417a-834d-11a208d32d96",
+                Email = managerEmail,
+                UserName = managerEmail,
+                EmailConfirmed = true
+            };
+
+            var createResult = await _userManager.CreateAsync(manager, managerEmail);
+            if (!createResult.Succeeded)
+            {
+                _logger.LogWarning(
+                    "Failed to create manager user: {Errors}",
+                    string.Join(", ", createResult.Errors.Select(e => e.Description)));
+            }
+            else if (!string.IsNullOrWhiteSpace(managerRoleName))
+            {
+                await _userManager.AddToRolesAsync(manager, [managerRoleName]);
             }
         }
 
-        var labor01 = new AppUser
+        var labor01Email = "john.labor@localhost";
+        var labor01 = await _userManager.FindByEmailAsync(labor01Email);
+        if (labor01 == null)
         {
-            Id = "b6327240-0aea-46fc-863a-777fc4e42560",
-            Email = "john.labor@localhost",
-            UserName = "john.labor@localhost",
-            EmailConfirmed = true
-        };
-
-        if (_userManager.Users.All(u => u.Email != labor01.Email))
-        {
-            await _userManager.CreateAsync(labor01, labor01.Email);
-
-            if (!string.IsNullOrWhiteSpace(laborRole.Name))
+            labor01 = new AppUser
             {
-                await _userManager.AddToRolesAsync(labor01, [laborRole.Name]);
+                Id = "b6327240-0aea-46fc-863a-777fc4e42560",
+                Email = labor01Email,
+                UserName = labor01Email,
+                EmailConfirmed = true
+            };
+
+            var createResult = await _userManager.CreateAsync(labor01, labor01Email);
+            if (!createResult.Succeeded)
+            {
+                _logger.LogWarning(
+                    "Failed to create labor01 user: {Errors}",
+                    string.Join(", ", createResult.Errors.Select(e => e.Description)));
+            }
+            else if (!string.IsNullOrWhiteSpace(laborRoleName))
+            {
+                await _userManager.AddToRolesAsync(labor01, [laborRoleName]);
             }
         }
 
-        var labor02 = new AppUser
+        var labor02Email = "peter.labor@localhost";
+        var labor02 = await _userManager.FindByEmailAsync(labor02Email);
+        if (labor02 == null)
         {
-            Id = "8104ab20-26c2-4651-b1de-c0baf04dbbd9",
-            Email = "peter.labor@localhost",
-            UserName = "peter.labor@localhost",
-            EmailConfirmed = true
-        };
-
-        if (_userManager.Users.All(u => u.Email != labor02.Email))
-        {
-            await _userManager.CreateAsync(labor02, labor02.Email);
-
-            if (!string.IsNullOrWhiteSpace(laborRole.Name))
+            labor02 = new AppUser
             {
-                await _userManager.AddToRolesAsync(labor02, [laborRole.Name]);
+                Id = "8104ab20-26c2-4651-b1de-c0baf04dbbd9",
+                Email = labor02Email,
+                UserName = labor02Email,
+                EmailConfirmed = true
+            };
+
+            var createResult = await _userManager.CreateAsync(labor02, labor02Email);
+            if (!createResult.Succeeded)
+            {
+                _logger.LogWarning(
+                    "Failed to create labor02 user: {Errors}",
+                    string.Join(", ", createResult.Errors.Select(e => e.Description)));
+            }
+            else if (!string.IsNullOrWhiteSpace(laborRoleName))
+            {
+                await _userManager.AddToRolesAsync(labor02, [laborRoleName]);
             }
         }
 
-        var labor03 = new AppUser
+        var labor03Email = "kevin.labor@localhost";
+        var labor03 = await _userManager.FindByEmailAsync(labor03Email);
+        if (labor03 == null)
         {
-            Id = "e17c83de-1089-4f19-bf79-5f789133d37f",
-            Email = "kevin.labor@localhost",
-            UserName = "kevin.labor@localhost",
-            EmailConfirmed = true
-        };
-
-        if (_userManager.Users.All(u => u.Email != labor03.Email))
-        {
-            await _userManager.CreateAsync(labor03, labor03.Email);
-
-            if (!string.IsNullOrWhiteSpace(laborRole.Name))
+            labor03 = new AppUser
             {
-                await _userManager.AddToRolesAsync(labor03, [laborRole.Name]);
+                Id = "e17c83de-1089-4f19-bf79-5f789133d37f",
+                Email = labor03Email,
+                UserName = labor03Email,
+                EmailConfirmed = true
+            };
+
+            var createResult = await _userManager.CreateAsync(labor03, labor03Email);
+            if (!createResult.Succeeded)
+            {
+                _logger.LogWarning(
+                    "Failed to create labor03 user: {Errors}",
+                    string.Join(", ", createResult.Errors.Select(e => e.Description)));
+            }
+            else if (!string.IsNullOrWhiteSpace(laborRoleName))
+            {
+                await _userManager.AddToRolesAsync(labor03, [laborRoleName]);
             }
         }
 
-        var labor04 = new AppUser
+        var labor04Email = "suzan.labor@localhost";
+        var labor04 = await _userManager.FindByEmailAsync(labor04Email);
+        if (labor04 == null)
         {
-            Id = "54cd01ba-b9ae-4c14-bab6-f3df0219ba4c",
-            Email = "suzan.labor@localhost",
-            UserName = "suzan.labor@localhost",
-            EmailConfirmed = true
-        };
-
-        if (_userManager.Users.All(u => u.Email != labor04.Email))
-        {
-            await _userManager.CreateAsync(labor04, labor04.Email);
-
-            if (!string.IsNullOrWhiteSpace(laborRole.Name))
+            labor04 = new AppUser
             {
-                await _userManager.AddToRolesAsync(labor04, [laborRole.Name]);
+                Id = "54cd01ba-b9ae-4c14-bab6-f3df0219ba4c",
+                Email = labor04Email,
+                UserName = labor04Email,
+                EmailConfirmed = true
+            };
+
+            var createResult = await _userManager.CreateAsync(labor04, labor04Email);
+            if (!createResult.Succeeded)
+            {
+                _logger.LogWarning(
+                    "Failed to create labor04 user: {Errors}",
+                    string.Join(", ", createResult.Errors.Select(e => e.Description)));
+            }
+            else if (!string.IsNullOrWhiteSpace(laborRoleName))
+            {
+                await _userManager.AddToRolesAsync(labor04, [laborRoleName]);
             }
         }
 

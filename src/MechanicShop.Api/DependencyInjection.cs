@@ -198,6 +198,8 @@ public static class DependencyInjection
         app.UseStatusCodePages();
 
         // 3. HTTPS redirection (before any other middleware that might generate URLs)
+        // Only redirect if HTTPS is available (UseHttpsRedirection checks this automatically)
+        // For HTTP-only production sites, this will not redirect
         app.UseHttpsRedirection();
 
         // 4. Serilog request logging (early to log all requests)

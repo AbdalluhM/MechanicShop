@@ -1,0 +1,31 @@
+services:
+  mechanicshop-api:
+    container_name: mechanicshop-api-prod
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+      target: final
+    ports:
+      - "80:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=Server=db20309.public.databaseasp.net;Database=db20309;User Id=db20309;Password=s_2S4J@hw?3G;Encrypt=False;MultipleActiveResultSets=True;
+      - AppSettings__AllowedOrigins__0=http://mechanicshopmangement.runasp.net
+      - AppSettings__AllowedOrigins__1=https://mechanicshopmangement.runasp.net
+      - JwtSettings__Issuer=mechanicshopmangement.runasp.net
+      - JwtSettings__Audience=mechanicshopmangement.runasp.net
+    networks:
+      - mechanicshop-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/health", "||", "exit", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  mechanicshop-net:
+    driver: bridge
+
